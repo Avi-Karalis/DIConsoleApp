@@ -1,8 +1,9 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using DIConsoleApp.Implementations;
+using DIConsoleApp.Interfaces;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Serilog;
-using System;
 
 // use DI && SeriLog, use appsettings.json!!!
 
@@ -20,16 +21,29 @@ internal partial class Program {
 
         Log.Logger.Information("Application Starting");
 
-        var host = Host.CreateDefaultBuilder()
-            .ConfigureServices((context, services) => {
-                services.AddTransient<IGreetingService,GreetingService>();
-            })
-            .UseSerilog()
-            .Build();
+        try {
 
-        var svc = ActivatorUtilities.CreateInstance<GreetingService>(host.Services);
 
-        svc.Run();
+            var serviceProvider = new ServiceCollection()
+                .AddLogging()
+                .AddSingleton<IFooService, FooService>()
+                .AddSingleton<IBarService, BarService>()
+                .BuildServiceProvider();
+
+            serviceProvider.GetService<ILoggerFactory>().AddSerilog();
+
+            var logger = serviceProvider.GetService<ILogger<Program>>();
+            logger.LogDebug("Services Created, starting application");
+
+            var bar = serviceProvider.GetService<IBarService>();
+            bar.DoSomeWork();
+
+            logger.LogDebug("Job's Done");
+        } catch (Exception ex) {
+            Log.Fatal(ex, "Oops something crashed");
+        } finally {
+            Log.CloseAndFlush();
+        }
     }
 
     // configure the logger. and pass the refernece of the configbuilder
