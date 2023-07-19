@@ -1,9 +1,11 @@
-﻿using DIConsoleApp.Implementations;
-using DIConsoleApp.Interfaces;
+﻿using System;
+using System.IO;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Serilog;
+using DIConsoleApp.Implementations;
+using DIConsoleApp.Interfaces;
 
 // use DI && SeriLog, use appsettings.json!!!
 
@@ -13,8 +15,10 @@ internal partial class Program {
         var builder = new ConfigurationBuilder();
         BuildConfig(builder);
 
+        var configuration = builder.Build();
+
         Log.Logger = new LoggerConfiguration()
-            .ReadFrom.Configuration(builder.Build()) 
+            .ReadFrom.Configuration(configuration) 
             .Enrich.FromLogContext()
             .WriteTo.Console()
             .CreateLogger();
@@ -26,6 +30,7 @@ internal partial class Program {
 
             var serviceProvider = new ServiceCollection()
                 .AddLogging()
+                .AddSingleton<IConfiguration>(configuration)
                 .AddSingleton<IFooService, FooService>()
                 .AddSingleton<IBarService, BarService>()
                 .BuildServiceProvider();
